@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World AQI Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="app-container" id="app-container">
+      <div class="glass-card">
+        <header>
+          <h1><i class="fa-solid fa-wind"></i> World AQI</h1>
+          <p>Real-time Air Quality Index</p>
+        </header>
+
+        <div class="search-section">
+          <div class="search-bar">
+            <input
+              type="text"
+              id="city-input"
+              placeholder="Enter city name..."
+              autocomplete="off"
+            />
+            <button id="search-btn">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <div id="suggestions-list" class="suggestions-list hidden"></div>
+          </div>
+          <button id="locate-btn" class="secondary-btn">
+            <i class="fa-solid fa-location-crosshairs"></i> Use My Location
+          </button>
+        </div>
+
+        <div id="loader" class="loader hidden"></div>
+        <div id="error-msg" class="error-msg hidden"></div>
+
+        <main id="result-container" class="hidden">
+          <div class="location-info">
+            <h2 id="city-name">City Name</h2>
+            <p id="time-info">Last updated: --</p>
+          </div>
+
+          <div class="aqi-display">
+            <div class="aqi-circle">
+              <span id="aqi-value">--</span>
+              <span class="aqi-label">AQI</span>
+            </div>
+            <div class="aqi-status">
+              <h3 id="aqi-status-text">--</h3>
+              <p id="aqi-implication">--</p>
+            </div>
+          </div>
+
+          <div class="details-grid">
+            <div class="detail-card">
+              <i class="fa-solid fa-smog"></i>
+              <span class="detail-label">PM2.5</span>
+              <span class="detail-value" id="pm25">--</span>
+            </div>
+            <div class="detail-card">
+              <i class="fa-solid fa-industry"></i>
+              <span class="detail-label">PM10</span>
+              <span class="detail-value" id="pm10">--</span>
+            </div>
+            <div class="detail-card">
+              <i class="fa-solid fa-cloud"></i>
+              <span class="detail-label">O3</span>
+              <span class="detail-value" id="o3">--</span>
+            </div>
+            <div class="detail-card">
+              <i class="fa-solid fa-car-side"></i>
+              <span class="detail-label">NO2</span>
+              <span class="detail-value" id="no2">--</span>
+            </div>
+          </div>
+
+          <div class="attribution">
+            Data provided by
+            <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
