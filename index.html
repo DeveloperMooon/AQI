@@ -29,7 +29,7 @@
             <input
               type="text"
               id="city-input"
-              placeholder="Enter city name..."
+              placeholder="Enter city or area name... "
               autocomplete="off"
             />
             <button id="search-btn">
@@ -67,21 +67,53 @@
               <i class="fa-solid fa-smog"></i>
               <span class="detail-label">PM2.5</span>
               <span class="detail-value" id="pm25">--</span>
+              <div class="meter-container">
+                <div class="meter-bar"></div>
+                <div class="meter-marker" id="pm25-meter"></div>
+              </div>
             </div>
             <div class="detail-card">
               <i class="fa-solid fa-industry"></i>
               <span class="detail-label">PM10</span>
               <span class="detail-value" id="pm10">--</span>
+              <div class="meter-container">
+                <div class="meter-bar"></div>
+                <div class="meter-marker" id="pm10-meter"></div>
+              </div>
             </div>
             <div class="detail-card">
               <i class="fa-solid fa-cloud"></i>
               <span class="detail-label">O3</span>
               <span class="detail-value" id="o3">--</span>
+              <div class="meter-container">
+                <div class="meter-bar"></div>
+                <div class="meter-marker" id="o3-meter"></div>
+              </div>
             </div>
             <div class="detail-card">
               <i class="fa-solid fa-car-side"></i>
               <span class="detail-label">NO2</span>
               <span class="detail-value" id="no2">--</span>
+              <div class="meter-container">
+                <div class="meter-bar"></div>
+                <div class="meter-marker" id="no2-meter"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Precautions & Suggestions Section -->
+          <div class="precautions-container">
+            <div class="precaution-column health-tips">
+              <h3><i class="fa-solid fa-heart-pulse"></i> Health Advice</h3>
+              <ul id="health-tips-list">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+            <div class="precaution-column eco-tips">
+              <h3><i class="fa-solid fa-leaf"></i> Eco Action</h3>
+              <ul id="eco-tips-list">
+                <!-- Dynamically populated -->
+              </ul>
             </div>
           </div>
 
