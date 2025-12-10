@@ -1,5 +1,5 @@
 // Open-Meteo APIs (No API Key required)
-const GEOCODING_API = "https://geocoding-api.open-meteo.com/v1/search";
+const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
 const AIR_QUALITY_API = "https://air-quality-api.open-meteo.com/v1/air-quality";
 
 // DOM Elements
@@ -21,6 +21,14 @@ const pm25El = document.getElementById("pm25");
 const pm10El = document.getElementById("pm10");
 const o3El = document.getElementById("o3");
 const no2El = document.getElementById("no2");
+const healthTipsList = document.getElementById("health-tips-list");
+const ecoTipsList = document.getElementById("eco-tips-list");
+
+// Meter Elements
+const pm25Meter = document.getElementById("pm25-meter");
+const pm10Meter = document.getElementById("pm10-meter");
+const o3Meter = document.getElementById("o3-meter");
+const no2Meter = document.getElementById("no2-meter");
 
 let debounceTimer;
 
@@ -55,13 +63,16 @@ locateBtn.addEventListener("click", handleGeolocation);
 
 async function fetchSuggestions(query) {
   try {
+    // Using OpenStreetMap (Nominatim) for granular area search
     const response = await fetch(
-      `${GEOCODING_API}?name=${query}&count=5&language=en&format=json`
+      `${GEOCODING_API}?q=${encodeURIComponent(
+        query
+      )}&format=json&limit=5&addressdetails=1`
     );
     const data = await response.json();
 
-    if (data.results && data.results.length > 0) {
-      showSuggestions(data.results);
+    if (data && data.length > 0) {
+      showSuggestions(data);
     } else {
       suggestionsList.classList.add("hidden");
     }
@@ -77,11 +88,23 @@ function showSuggestions(locations) {
   locations.forEach((location) => {
     const div = document.createElement("div");
     div.className = "suggestion-item";
-    div.textContent = `${location.name}, ${location.country}`;
+
+    // Format display name (Area, City, Country)
+    const displayName = location.display_name; // Nominatim provides a full address string
+    // Simplify for display if too long
+    const parts = displayName.split(", ");
+    const shortName =
+      parts.length > 3
+        ? `${parts[0]}, ${parts[1]}, ${parts[parts.length - 1]}`
+        : displayName;
+
+    div.textContent = shortName;
     div.onclick = () => {
-      cityInput.value = location.name;
+      // Use the name of the place (e.g., "Sector 18") for the input
+      const name = location.name || parts[0];
+      cityInput.value = name;
       suggestionsList.classList.add("hidden");
-      fetchAQI(location.latitude, location.longitude, location.name);
+      fetchAQI(location.lat, location.lon, name);
     };
     suggestionsList.appendChild(div);
   });
@@ -90,18 +113,20 @@ function showSuggestions(locations) {
 async function searchCity(cityName) {
   try {
     const response = await fetch(
-      `${GEOCODING_API}?name=${cityName}&count=1&language=en&format=json`
+      `${GEOCODING_API}?q=${encodeURIComponent(cityName)}&format=json&limit=1`
     );
     const data = await response.json();
 
-    if (data.results && data.results.length > 0) {
-      const location = data.results[0];
-      fetchAQI(location.latitude, location.longitude, location.name);
+    if (data && data.length > 0) {
+      const location = data[0];
+      // Use the name found or the search query
+      const name = location.name || cityName;
+      fetchAQI(location.lat, location.lon, name);
     } else {
-      showError("City not found.");
+      showError("Location not found.");
     }
   } catch (err) {
-    showError("Error searching for city.");
+    showError("Error searching for location.");
   }
 }
 
@@ -160,12 +185,10 @@ function updateUI(currentData, cityName) {
   aqiValueEl.textContent = aqi;
 
   // Pollutants
-  pm25El.textContent = currentData.pm2_5 ? `${currentData.pm2_5} µg/m³` : "--";
-  pm10El.textContent = currentData.pm10 ? `${currentData.pm10} µg/m³` : "--";
-  o3El.textContent = currentData.ozone ? `${currentData.ozone} µg/m³` : "--";
-  no2El.textContent = currentData.nitrogen_dioxide
-    ? `${currentData.nitrogen_dioxide} µg/m³`
-    : "--";
+  updatePollutant(pm25El, pm25Meter, currentData.pm2_5, 250); // PM2.5 max ~250
+  updatePollutant(pm10El, pm10Meter, currentData.pm10, 425); // PM10 max ~425
+  updatePollutant(o3El, o3Meter, currentData.ozone, 400); // Ozone max ~400
+  updatePollutant(no2El, no2Meter, currentData.nitrogen_dioxide, 400); // NO2 max ~400
 
   // Determine Status & Theme
   const status = getAQIStatus(aqi);
@@ -176,8 +199,127 @@ function updateUI(currentData, cityName) {
   // Update Theme Colors
   document.body.className = status.className;
 
+  // Update Precautions
+  updatePrecautions(aqi);
+
   // Show results
   resultContainer.classList.remove("hidden");
+}
+
+function updatePollutant(textEl, meterEl, value, maxValue) {
+  if (value != null) {
+    textEl.textContent = `${value} µg/m³`;
+    // Calculate percentage, capped at 100%
+    const percentage = Math.min((value / maxValue) * 100, 100);
+    meterEl.style.left = `${percentage}%`;
+  } else {
+    textEl.textContent = "--";
+    meterEl.style.left = "0%";
+  }
+}
+
+function updatePrecautions(aqi) {
+  const precautions = getPrecautions(aqi);
+
+  // Clear previous lists
+  healthTipsList.innerHTML = "";
+  ecoTipsList.innerHTML = "";
+
+  // Populate Health Tips
+  precautions.health.forEach((tip) => {
+    const li = document.createElement("li");
+    li.textContent = tip;
+    healthTipsList.appendChild(li);
+  });
+
+  // Populate Eco Tips
+  precautions.eco.forEach((tip) => {
+    const li = document.createElement("li");
+    li.textContent = tip;
+    ecoTipsList.appendChild(li);
+  });
+}
+
+function getPrecautions(aqi) {
+  if (aqi <= 50) {
+    return {
+      health: [
+        "Air quality is great! Enjoy outdoor activities.",
+        "Open windows to ventilate your home.",
+        "Perfect time for exercise outside.",
+      ],
+      eco: [
+        "Walk or bike instead of driving.",
+        "Keep maintaining clean habits.",
+        "Plant a tree or maintain your garden.",
+      ],
+    };
+  } else if (aqi <= 100) {
+    return {
+      health: [
+        "Sensitive individuals should limit prolonged outdoor exertion.",
+        "Generally safe for most people to be outside.",
+        "Monitor air quality if you have asthma.",
+      ],
+      eco: [
+        "Carpool or use public transport.",
+        "Conserve energy at home to reduce emissions.",
+        "Keep your vehicle well-tuned.",
+      ],
+    };
+  } else if (aqi <= 150) {
+    return {
+      health: [
+        "Sensitive groups (kids, elderly) should reduce outdoor play.",
+        "Wear a mask if you have respiratory issues.",
+        "Take breaks during outdoor activities.",
+      ],
+      eco: [
+        "Avoid burning wood or trash.",
+        "Reduce car trips; combine errands.",
+        "Refuel cars in the evening when it's cooler.",
+      ],
+    };
+  } else if (aqi <= 200) {
+    return {
+      health: [
+        "Everyone should reduce prolonged outdoor exertion.",
+        "Wear a mask (N95/KN95) if you must be outside.",
+        "Run an air purifier indoors if available.",
+      ],
+      eco: [
+        "Strictly avoid any burning activities.",
+        "Use public transit to reduce vehicle emissions.",
+        "Delay using gas-powered lawn equipment.",
+      ],
+    };
+  } else if (aqi <= 300) {
+    return {
+      health: [
+        "Avoid outdoor activities completely.",
+        "Keep windows closed to keep dirty air out.",
+        "Sensitive groups should stay in a clean air room.",
+      ],
+      eco: [
+        "Minimize energy consumption.",
+        "Report illegal burning to local authorities.",
+        "Avoid idling your vehicle.",
+      ],
+    };
+  } else {
+    return {
+      health: [
+        "Stay indoors completely; it's an emergency condition.",
+        "Seal windows and doors with wet towels if needed.",
+        "Seek medical help immediately if breathless.",
+      ],
+      eco: [
+        "Do not use vehicles unless for an absolute emergency.",
+        "Stop all non-essential energy use.",
+        "Spread awareness about the emergency.",
+      ],
+    };
+  }
 }
 
 function getAQIStatus(aqi) {
